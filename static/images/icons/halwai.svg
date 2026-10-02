@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Halwai: Traditional Kadhai / Sweet Making Vessel & Laddus / Jalebi -->
+  <circle cx="32" cy="32" r="29" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <!-- Kadhai Pan -->
+  <path d="M12 36 C14 48 50 48 52 36" fill="#fbbf24" stroke="#b45309" stroke-width="3"/>
+  <!-- Handles -->
+  <path d="M8 33 C6 30 12 28 14 34" stroke="#b45309" stroke-width="2.5"/>
+  <path d="M56 33 C58 30 52 28 50 34" stroke="#b45309" stroke-width="2.5"/>
+  <!-- Base Stand -->
+  <line x1="22" y1="46" x2="16" y2="52" stroke="#b45309" stroke-width="2.5"/>
+  <line x1="42" y1="46" x2="48" y2="52" stroke="#b45309" stroke-width="2.5"/>
+  <line x1="16" y1="52" x2="48" y2="52" stroke="#b45309" stroke-width="2.5"/>
+  <!-- Sweets / Laddus & Steam -->
+  <circle cx="26" cy="32" r="4" fill="#f59e0b" stroke="#b45309" stroke-width="1.5"/>
+  <circle cx="34" cy="30" r="4" fill="#f59e0b" stroke="#b45309" stroke-width="1.5"/>
+  <circle cx="38" cy="33" r="3.5" fill="#f59e0b" stroke="#b45309" stroke-width="1.5"/>
+  <circle cx="30" cy="27" r="3.5" fill="#f59e0b" stroke="#b45309" stroke-width="1.5"/>
+  <!-- Aroma / Steam swirls -->
+  <path d="M24 20 Q26 15 24 12" stroke="#d97706" stroke-width="2" stroke-dasharray="2 1"/>
+  <path d="M32 18 Q34 13 32 10" stroke="#d97706" stroke-width="2" stroke-dasharray="2 1"/>
+  <path d="M40 20 Q42 15 40 12" stroke="#d97706" stroke-width="2" stroke-dasharray="2 1"/>
+</svg>

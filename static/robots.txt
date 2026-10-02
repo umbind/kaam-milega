@@ -1,0 +1,16 @@
+# Anti-Scraping and Anti-Harvesting robots.txt for Kaam Milega
+User-agent: *
+Disallow: /api/
+Disallow: /worker/
+Disallow: /contact/
+Disallow: /reports/
+
+# Prevent AI scrapers from indexing rural worker contact directories
+User-agent: GPTBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /

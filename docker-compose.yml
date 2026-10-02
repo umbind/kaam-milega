@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  kaam-milega:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kaam_milega_app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8080
+      - KAAM_MILEGA_SALT=KaamMilega_Rural_Shield_2026_Secure_Salt
+      - FEEDBACK_EMAIL=support@kaammilega.in
+    volumes:
+      - kaam_data:/app
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/stats').read()\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  kaam_data:
+    driver: local
