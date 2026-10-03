@@ -201,6 +201,8 @@ const s = tabItems[i].querySelector('span'); if (s) s.innerText = t;
 });
 }
 setH('heading-find-workers', `<span>🔍</span> ${dict.search_heading || 'कारीगर खोजें'}`);
+setT('lbl-filter-trade', '🛠️ ' + (dict.all_trades ? dict.all_trades.split(' ')[0] : 'काम / पेशा (Skill)'));
+setT('btn-reset-filters-text', 'फ़िल्टर रीसेट');
 setT('lbl-filter-state', dict.state_label || '🏛️ राज्य (State)');
 setOpt('#filter-state option[value="all"]', dict.all_states || 'अखिल भारतीय (All India)');
 setT('lbl-filter-district', dict.district_label || '📍 जिला (District)');
@@ -210,7 +212,8 @@ setOpt('#filter-status option[value="all"]', dict.all_statuses || 'सभी स
 setOpt('#filter-status option[value="available"]', dict.status_available || '🟢 उपलब्ध (Available)');
 setOpt('#filter-status option[value="busy"]', dict.status_busy || '🔴 व्यस्त (Busy)');
 setOpt('#filter-status option[value="seasonal_dormancy"]', dict.status_dormancy || '🌾 खेती/छुट्टी पर');
-if (typeof renderTradeFilterPills === 'function') renderTradeFilterPills();
+if (typeof renderTradeDropdown === 'function') renderTradeDropdown();
+else if (typeof renderTradeFilterPills === 'function') renderTradeFilterPills();
 if (typeof initJobSkillOptions === 'function') initJobSkillOptions();
 setH('modal-cat-title', `<span>➕</span> ${dict.add_category_title || 'नया काम / हुनर जोड़ें'}`);
 setT('modal-cat-sub', dict.add_category_sub || 'यदि आपका हुनर सूची में नहीं है, तो यहाँ नया नाम जोड़ें:');

@@ -15,12 +15,15 @@ const ST = {
 function getSearchI18n(l) { return (ST[l] || ST.hi).split('|'); }
 function updateTrustFilterLabels(l) {
   const [all, top, ver, ldr, avail] = getSearchI18n(l);
-  const s = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
-  s('trust-chip-all', all);
-  s('trust-chip-top_rated', '⭐ ' + top);
-  s('trust-chip-verified', '✅ ' + ver);
-  s('trust-chip-team_leader', '👥 ' + ldr);
-  s('trust-chip-available', '🟢 ' + avail);
+  const setOpt = (val, txt) => {
+    const opt = document.querySelector(`#filter-trust option[value="${val}"]`);
+    if (opt) opt.innerText = txt;
+  };
+  setOpt('all', all ? (all + ' (All Workers)') : 'सभी कारीगर (All Workers)');
+  setOpt('top_rated', '⭐ ' + top);
+  setOpt('verified', '✅ ' + ver);
+  setOpt('team_leader', '👥 ' + ldr);
+  setOpt('available', '🟢 ' + avail);
 }
 
 let activeTradeFilter = 'all';
@@ -151,74 +154,143 @@ if (typeof speakPrompt === 'function') {
 speakPrompt(isEn ? `New skill "${name}" added successfully.` : `नया हुनर ${name} जोड़ दिया गया है।`);
 }
 }
+function renderTradeDropdown() {
+  const select = document.getElementById('filter-trade');
+  if (!select) return;
+  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'hi';
+  const dict = (typeof I18N_DATA !== 'undefined' && I18N_DATA[lang]) ? I18N_DATA[lang] : (I18N_DATA['hi'] || {});
+  const customCats = getCustomCategories();
+
+  let optionsHtml = '';
+  // 1. All trades
+  const allLabel = dict.all_trades || 'सभी काम व चालक (All Trades)';
+  optionsHtml += `<option value="all">${allLabel}</option>`;
+
+  // 2. Standard trades
+  STANDARD_TRADES.filter(t => t.key !== 'all').forEach(t => {
+    const label = ((dict.trades && dict.trades[t.key]) || t.defaultName);
+    optionsHtml += `<option value="${t.key}">${label}</option>`;
+  });
+
+  // 3. Custom categories
+  if (customCats.length > 0) {
+    customCats.forEach(cat => {
+      optionsHtml += `<option value="${cat}">🛠️ ${cat}</option>`;
+    });
+  }
+
+  // 4. Add new skill action
+  const addPrompt = dict.btn_add_category || '➕ नया काम / हुनर जोड़ें (Add Skill)...';
+  optionsHtml += `<option value="_add_new_">${addPrompt}</option>`;
+
+  select.innerHTML = optionsHtml;
+  select.value = activeTradeFilter;
+}
+
 function renderTradeFilterPills() {
-const container = document.getElementById('trade-pills-container');
-if (!container) return;
-const lang = (typeof currentLang !== 'undefined') ? currentLang : 'hi';
-const dict = (typeof I18N_DATA !== 'undefined' && I18N_DATA[lang]) ? I18N_DATA[lang] : (I18N_DATA['hi'] || {});
-const [t_all, t_top, t_ver, t_ldr, t_avail, t_share, t_panchayat, t_crew, t_earn, t_max] = getSearchI18n(lang);
-const customCats = getCustomCategories();
-let pillsHtml = '';
-STANDARD_TRADES.forEach(t => {
-const isSelected = activeTradeFilter === t.key;
-const label = (t.key === 'all')
-? (dict.all_trades || t.defaultName)
-: ((dict.trades && dict.trades[t.key]) || t.defaultName);
-pillsHtml += `
-<button type="button" data-trade="${t.key}" onclick="setTradeFilter('${t.key}')" class="trade-filter-btn shrink-0 flex-shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap border touch-btn ${isSelected ? 'bg-green-800 text-white shadow-sm border-green-800' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50'}">
-${label}
-</button>
-`;
-});
-customCats.forEach(cat => {
-const isSelected = activeTradeFilter === cat;
-pillsHtml += `
-<button type="button" data-trade="${cat}" onclick="setTradeFilter('${cat.replace(/'/g, "\\'")}')" class="trade-filter-btn shrink-0 flex-shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap border touch-btn ${isSelected ? 'bg-green-800 text-white shadow-sm border-green-800' : 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100'}">
-🛠️ ${cat}
-</button>
-`;
-});
-const addBtnLabel = dict.btn_add_category || '➕ अन्य काम जोड़ें';
-pillsHtml += `
-<button type="button" onclick="openAddCategoryModal('search')" class="shrink-0 flex-shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-2 border-dashed border-emerald-400 flex items-center gap-1 touch-btn">
-${addBtnLabel}
-</button>
-`;
-container.innerHTML = pillsHtml;
+  renderTradeDropdown();
 }
+
+function handleTradeDropdownChange(val) {
+  if (val === '_add_new_') {
+    const select = document.getElementById('filter-trade');
+    if (select) select.value = activeTradeFilter;
+    openAddCategoryModal('search');
+    return;
+  }
+  setTradeFilter(val);
+}
+
+function highlightActiveFilters() {
+  const isAnyActive = activeTradeFilter !== 'all' || activeTrustFilter !== 'all' ||
+                      activeStateFilter !== 'all' || activeDistrictFilter !== 'all' ||
+                      activeStatusFilter !== 'all';
+
+  const resetBtn = document.getElementById('btn-reset-filters');
+  if (resetBtn) {
+    if (isAnyActive) {
+      resetBtn.classList.remove('text-slate-500', 'border-transparent');
+      resetBtn.classList.add('text-red-700', 'bg-red-50', 'border-red-300', 'font-black');
+    } else {
+      resetBtn.classList.remove('text-red-700', 'bg-red-50', 'border-red-300', 'font-black');
+      resetBtn.classList.add('text-slate-500', 'border-transparent');
+    }
+  }
+
+  const markSelect = (id, active) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (active) {
+      el.classList.add('border-green-600', 'bg-green-50/50', 'text-green-950');
+      el.classList.remove('border-slate-300', 'bg-white');
+    } else {
+      el.classList.remove('border-green-600', 'bg-green-50/50', 'text-green-950');
+      el.classList.add('border-slate-300', 'bg-white');
+    }
+  };
+
+  markSelect('filter-trade', activeTradeFilter !== 'all');
+  markSelect('filter-trust', activeTrustFilter !== 'all');
+  markSelect('filter-state', activeStateFilter !== 'all');
+  markSelect('filter-district', activeDistrictFilter !== 'all');
+  markSelect('filter-status', activeStatusFilter !== 'all');
+}
+
+function resetAllFilters() {
+  activeTradeFilter = 'all';
+  activeTrustFilter = 'all';
+  activeStateFilter = 'all';
+  activeDistrictFilter = 'all';
+  activeStatusFilter = 'all';
+
+  const tSel = document.getElementById('filter-trade');
+  if (tSel) tSel.value = 'all';
+  const trSel = document.getElementById('filter-trust');
+  if (trSel) trSel.value = 'all';
+  const sSel = document.getElementById('filter-state');
+  if (sSel) sSel.value = 'all';
+  const dSel = document.getElementById('filter-district');
+  if (dSel) {
+    dSel.innerHTML = '<option value="all">सभी जिले (All Districts)</option>';
+    dSel.value = 'all';
+  }
+  const stSel = document.getElementById('filter-status');
+  if (stSel) stSel.value = 'all';
+
+  highlightActiveFilters();
+  loadWorkers();
+
+  if (typeof speakPrompt === 'function') {
+    const lang = (typeof currentLang !== 'undefined') ? currentLang : 'hi';
+    const isEn = lang === 'en';
+    speakPrompt(isEn ? 'All filters reset.' : 'सभी फ़िल्टर साफ़ कर दिए गए हैं।');
+  }
+}
+
 function initSearchFilters() {
-renderTradeFilterPills();
-const pillsContainer = document.getElementById('trade-pills-container');
-if (pillsContainer && !pillsContainer.dataset.wheelBound) {
-pillsContainer.dataset.wheelBound = 'true';
-pillsContainer.addEventListener('wheel', (evt) => {
-if (evt.deltaY !== 0 && pillsContainer.scrollWidth > pillsContainer.clientWidth) {
-evt.preventDefault();
-pillsContainer.scrollLeft += evt.deltaY;
+  renderTradeDropdown();
+  updateTrustFilterLabels(typeof currentLang !== 'undefined' ? currentLang : 'hi');
+  const stateSelect = document.getElementById('filter-state');
+  if (stateSelect && stateSelect.children.length <= 1 && typeof getIndiaStates === 'function') {
+    const states = getIndiaStates();
+    const lang = (typeof currentLang !== 'undefined') ? currentLang : 'hi';
+    const dict = (typeof I18N_DATA !== 'undefined' && I18N_DATA[lang]) ? I18N_DATA[lang] : {};
+    const allStatesLabel = dict.all_states || 'अखिल भारतीय (All India)';
+    stateSelect.innerHTML = `<option value="all">${allStatesLabel}</option>` +
+      states.map(s => `<option value="${s}">${s}</option>`).join('');
+    if (activeStateFilter !== 'all') stateSelect.value = activeStateFilter;
+  }
+  highlightActiveFilters();
 }
-}, { passive: false });
-}
-const stateSelect = document.getElementById('filter-state');
-if (stateSelect && stateSelect.children.length <= 1 && typeof getIndiaStates === 'function') {
-const states = getIndiaStates();
-const lang = (typeof currentLang !== 'undefined') ? currentLang : 'hi';
-const dict = (typeof I18N_DATA !== 'undefined' && I18N_DATA[lang]) ? I18N_DATA[lang] : {};
-const allStatesLabel = dict.all_states || 'अखिल भारतीय (All India)';
-stateSelect.innerHTML = `<option value="all">${allStatesLabel}</option>` +
-states.map(s => `<option value="${s}">${s}</option>`).join('');
-}
-}
+
 function setTrustFilter(filter) {
-activeTrustFilter = filter;
-const chips = document.querySelectorAll('.trust-filter-chip');
-chips.forEach(c => {
-if (c.getAttribute('data-trust') === filter) {
-c.className = 'trust-filter-chip px-3 py-1.5 rounded-full text-xs font-black bg-green-700 text-white shadow-sm border border-green-700 cursor-pointer transition-all flex items-center gap-1';
-} else {
-c.className = 'trust-filter-chip px-3 py-1.5 rounded-full text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 border border-slate-300 cursor-pointer transition-all flex items-center gap-1';
-}
-});
-loadWorkers();
+  activeTrustFilter = filter;
+  const select = document.getElementById('filter-trust');
+  if (select && select.value !== filter) {
+    select.value = filter;
+  }
+  highlightActiveFilters();
+  loadWorkers();
 }
 let isVoiceListening = false;
 let speechRecognitionInstance = null;
@@ -504,44 +576,41 @@ alert('नेटवर्क त्रुटि हुई।');
 }
 }
 function setTradeFilter(trade) {
-activeTradeFilter = trade;
-document.querySelectorAll('.trade-filter-btn').forEach(btn => {
-const isThisTrade = btn.dataset.trade === trade;
-btn.classList.toggle('bg-green-800', isThisTrade);
-btn.classList.toggle('text-white', isThisTrade);
-btn.classList.toggle('border-green-800', isThisTrade);
-btn.classList.toggle('bg-white', !isThisTrade);
-btn.classList.toggle('text-slate-800', !isThisTrade);
-btn.classList.toggle('border-slate-300', !isThisTrade);
-if (isThisTrade && typeof btn.scrollIntoView === 'function') {
-try {
-btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-} catch (e) {}
-}
-});
-loadWorkers();
+  activeTradeFilter = trade;
+  const select = document.getElementById('filter-trade');
+  if (select && select.value !== trade) {
+    if (!Array.from(select.options).some(o => o.value === trade)) {
+      renderTradeDropdown();
+    }
+    select.value = trade;
+  }
+  highlightActiveFilters();
+  loadWorkers();
 }
 function setStateFilter(state) {
-activeStateFilter = state;
-const distSelect = document.getElementById('filter-district');
-if (distSelect) {
-if (state === 'all') {
-distSelect.innerHTML = '<option value="all">सभी जिले (All Districts)</option>';
-activeDistrictFilter = 'all';
-} else {
-const districts = typeof getDistrictsForState === 'function' ? getDistrictsForState(state) : [];
-distSelect.innerHTML = '<option value="all">सभी जिले (All Districts)</option>' +
-districts.map(d => `<option value="${d}">${d}</option>`).join('');
-activeDistrictFilter = 'all';
-}
-}
-loadWorkers();
+  activeStateFilter = state;
+  const distSelect = document.getElementById('filter-district');
+  if (distSelect) {
+    if (state === 'all') {
+      distSelect.innerHTML = '<option value="all">सभी जिले (All Districts)</option>';
+      activeDistrictFilter = 'all';
+    } else {
+      const districts = typeof getDistrictsForState === 'function' ? getDistrictsForState(state) : [];
+      distSelect.innerHTML = '<option value="all">सभी जिले (All Districts)</option>' +
+        districts.map(d => `<option value="${d}">${d}</option>`).join('');
+      activeDistrictFilter = 'all';
+    }
+  }
+  highlightActiveFilters();
+  loadWorkers();
 }
 function setDistrictFilter(district) {
-activeDistrictFilter = district;
-loadWorkers();
+  activeDistrictFilter = district;
+  highlightActiveFilters();
+  loadWorkers();
 }
 function setStatusFilter(status) {
-activeStatusFilter = status;
-loadWorkers();
+  activeStatusFilter = status;
+  highlightActiveFilters();
+  loadWorkers();
 }
