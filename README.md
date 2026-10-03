@@ -59,13 +59,20 @@ Open browser at: `http://localhost:8080` (or `http://<your-ip>:8080` on mobile)
 docker compose up -d --build
 ```
 
-### 3. Run Automated Cyber Defense Tests
+### 3. Android App & Offline APK (मोबाइल ऐप)
+प्रोजेक्ट का पूर्णतः ऑफ़लाइन-सक्षम Android Studio प्रोजेक्ट और कंपाइल किया गया APK उपलब्ध है:
+- **तैयार APK फ़ाइल**: `KaamMilega.apk` (सीधे फ़ोन पर इंस्टॉल करने योग्य)
+- **Android Studio प्रोजेक्ट**: `../kaam-milega-android` (Android Studio में खोलें या `gradlew assembleDebug` चलाएं)
+- ऑफ़लाइन एसेट्स के साथ शून्य इंटरनेट पर भी सुचारू रूप से कार्य करता है।
+
+
+### 4. Run Automated Cyber Defense Tests
 ```bash
 python test_kaam_milega.py
 ```
 *(All 20/20 Security & Privacy Tests)*
 
-### 4. Run Performance & Concurrency Benchmarks
+### 5. Run Performance & Concurrency Benchmarks
 ```bash
 python benchmark_suite.py
 ```
