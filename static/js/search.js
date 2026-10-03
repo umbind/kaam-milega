@@ -397,153 +397,203 @@ recognition.start();
 console.error('Voice search start error:', e);
 }
 }
+function getSkeletonCardsHtml(count = 4) {
+  let skeletons = '';
+  for (let i = 0; i < count; i++) {
+    skeletons += `
+    <div class="card-elevation bg-white rounded-2xl p-5 border border-slate-100 flex flex-col justify-between">
+      <div>
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-14 h-14 rounded-full skeleton-box flex-shrink-0"></div>
+          <div class="flex-1 space-y-2">
+            <div class="w-3/4 h-5 skeleton-box rounded-md"></div>
+            <div class="w-1/2 h-3.5 skeleton-box rounded-md"></div>
+          </div>
+        </div>
+        <div class="flex gap-2 mb-4">
+          <div class="w-20 h-6 skeleton-box rounded-md"></div>
+          <div class="w-16 h-6 skeleton-box rounded-md"></div>
+        </div>
+        <div class="w-full h-12 skeleton-box rounded-xl mb-4"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+        <div class="h-11 skeleton-box rounded-xl"></div>
+        <div class="h-11 skeleton-box rounded-xl"></div>
+      </div>
+    </div>`;
+  }
+  return skeletons;
+}
+
 async function loadWorkers() {
-initSearchFilters();
-const container = document.getElementById('workers-grid');
-if (!container) return;
-const lang = (typeof currentLang !== 'undefined') ? currentLang : 'hi';
-const dict = (typeof I18N_DATA !== 'undefined' && I18N_DATA[lang]) ? I18N_DATA[lang] : (I18N_DATA['hi'] || {});
-container.innerHTML = `
-<div class="col-span-full py-12 text-center text-slate-500 font-bold">
-<div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-green-600 border-t-transparent mb-3"></div>
-<p>${dict.loading_workers || 'कारीगरों व चालकों की सूची लोड हो रही है...'}</p>
-</div>
-`;
-let url = `/api/workers?skill=${encodeURIComponent(activeTradeFilter)}&state=${encodeURIComponent(activeStateFilter)}&district=${encodeURIComponent(activeDistrictFilter)}&status=${encodeURIComponent(activeStatusFilter)}&trust_filter=${encodeURIComponent(activeTrustFilter)}`;
-try {
-const res = await fetch(url);
-const data = await res.json();
-allLoadedWorkers = data.workers || [];
-renderWorkerCards(allLoadedWorkers);
-} catch (err) {
-container.innerHTML = `
-<div class="col-span-full py-8 text-center text-red-600 font-bold">
-त्रुटि हुई। कृपया पुनः प्रयास करें।
-</div>
-`;
+  initSearchFilters();
+  const container = document.getElementById('workers-grid');
+  if (!container) return;
+  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'hi';
+  const dict = (typeof I18N_DATA !== 'undefined' && I18N_DATA[lang]) ? I18N_DATA[lang] : (I18N_DATA['hi'] || {});
+  
+  // Render animated skeleton loaders immediately for 0 Cumulative Layout Shift (CLS)
+  container.innerHTML = getSkeletonCardsHtml(4);
+  
+  let url = `/api/workers?skill=${encodeURIComponent(activeTradeFilter)}&state=${encodeURIComponent(activeStateFilter)}&district=${encodeURIComponent(activeDistrictFilter)}&status=${encodeURIComponent(activeStatusFilter)}&trust_filter=${encodeURIComponent(activeTrustFilter)}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    allLoadedWorkers = data.workers || [];
+    renderWorkerCards(allLoadedWorkers);
+  } catch (err) {
+    container.innerHTML = `
+      <div class="col-span-full py-8 text-center text-red-600 font-bold bg-red-50 rounded-2xl border border-red-200 p-6">
+        <span class="text-3xl block mb-2">⚠️</span>
+        <p class="text-base mb-2">कारीगर लोड करने में समस्या हुई। कृपया इंटरनेट कनेक्शन जांचें।</p>
+        <button onclick="loadWorkers()" class="mt-2 px-4 py-2 bg-red-600 text-white rounded-xl font-bold text-sm touch-scale">पुनः प्रयास करें</button>
+      </div>
+    `;
+  }
 }
-}
+
 function renderWorkerCards(workers) {
-const container = document.getElementById('workers-grid');
-const countBadge = document.getElementById('worker-count-badge');
-const lang = (typeof currentLang !== 'undefined') ? currentLang : 'hi';
-const dict = (typeof I18N_DATA !== 'undefined' && I18N_DATA[lang]) ? I18N_DATA[lang] : (I18N_DATA['hi'] || {});
-const [t_all, t_top, t_ver, t_ldr, t_avail, t_share, t_panchayat, t_crew, t_earn, t_max] = getSearchI18n(lang);
-if (countBadge) countBadge.innerText = `${workers.length} ${dict.workers_found || 'कारीगर मिले'}`;
-if (workers.length === 0) {
-container.innerHTML = `
-<div class="col-span-full bg-white p-8 rounded-2xl text-center border-2 border-dashed border-slate-300">
-<span class="text-5xl mb-3 block">🔍</span>
-<h3 class="text-xl font-bold text-slate-800 mb-1">${dict.no_workers_found || 'कोई कारीगर नहीं मिला'}</h3>
-<p class="text-slate-500 text-sm">${dict.no_workers_sub || 'कृपया फ़िल्टर बदलें या किसी अन्य जिले में खोजें।'}</p>
-</div>
-`;
-return;
-}
-container.innerHTML = workers.map(w => {
-let statusClass = 'status-available';
-let statusText = dict.available || '🟢 उपलब्ध';
-if (w.availability_status === 'busy') {
-statusClass = 'status-busy';
-statusText = dict.busy || '🔴 व्यस्त';
-} else if (w.availability_status === 'seasonal_dormancy') {
-statusClass = 'status-dormancy';
-statusText = dict.dormancy || '🌾 खेती/छुट्टी पर';
-}
-let tierBadge = '';
-if (w.verification_tier === 'tier3') {
-tierBadge = `<span class="bg-amber-100 text-amber-900 border border-amber-300 text-xs px-2.5 py-0.5 rounded-full font-bold">🏛️ ${t_panchayat}</span>`;
-} else if (w.is_verified) {
-tierBadge = `<span class="bg-green-100 text-green-900 border border-green-300 text-xs px-2.5 py-0.5 rounded-full font-bold">✅ ${t_ver}</span>`;
-}
-const topRatedBadge = (w.is_top_rated || w.rating_avg >= 4.5)
-? `<span class="bg-amber-100 text-amber-900 border border-amber-300 text-xs px-2 py-0.5 rounded-full font-black">⭐ ${t_top}</span>`
-: '';
-const tradePills = w.skills.map(s => {
-return `<span class="bg-slate-100 text-slate-800 text-xs px-2.5 py-1 rounded-md font-bold">${getLocalizedTradeName(s)}</span>`;
-}).join(' ');
-const callText = dict.btn_call || '📞 कॉल करें';
-const waText = dict.btn_whatsapp || '💬 WhatsApp';
-const slipText = dict.btn_work_slip || '📋 काम की पर्ची बनाएँ';
-const reportText = dict.btn_report || '⚠️ रिपोर्ट करें';
-const dailyWageLabel = dict.daily_wage || 'रोज की दिहाड़ी';
-const perDayLabel = dict.per_day || '/दिन';
-const expLabel = dict.experience || 'साल अनुभव';
-const earnabilityBadge = w.estimated_monthly_earnings
-? `<div class="mb-3 px-3 py-1.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-xl text-xs font-extrabold flex items-center justify-between">
-<span class="flex items-center gap-1"><span>💰</span> ${t_earn}</span>
-<span class="text-emerald-800 font-black">₹${w.estimated_monthly_earnings.toLocaleString('en-IN')}${t_max}</span>
-</div>`
-: '';
-return `
-<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
-<div class="p-5">
+  const container = document.getElementById('workers-grid');
+  const countBadge = document.getElementById('worker-count-badge');
+  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'hi';
+  const dict = (typeof I18N_DATA !== 'undefined' && I18N_DATA[lang]) ? I18N_DATA[lang] : (I18N_DATA['hi'] || {});
+  const [t_all, t_top, t_ver, t_ldr, t_avail, t_share, t_panchayat, t_crew, t_earn, t_max] = getSearchI18n(lang);
+  
+  if (countBadge) countBadge.innerText = `${workers.length} ${dict.workers_found || 'कारीगर मिले'}`;
+  
+  if (workers.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full bg-white p-8 rounded-2xl text-center border-2 border-dashed border-slate-300 card-elevation">
+        <span class="text-5xl mb-3 block">🔍</span>
+        <h3 class="text-xl font-black text-slate-800 mb-1">${dict.no_workers_found || 'कोई कारीगर नहीं मिला'}</h3>
+        <p class="text-slate-500 text-sm mb-4">${dict.no_workers_sub || 'कृपया फ़िल्टर बदलें या किसी अन्य जिले में खोजें।'}</p>
+        <button onclick="resetAllFilters()" class="px-5 py-2.5 bg-green-700 text-white rounded-xl font-bold text-sm touch-scale shadow-sm">फ़िल्टर रीसेट करें</button>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = workers.map(w => {
+    let statusClass = 'status-available';
+    let statusText = dict.available || '🟢 उपलब्ध';
+    let dotColor = 'bg-emerald-500';
+    if (w.availability_status === 'busy') {
+      statusClass = 'status-busy';
+      statusText = dict.busy || '🔴 व्यस्त';
+      dotColor = 'bg-rose-500';
+    } else if (w.availability_status === 'seasonal_dormancy') {
+      statusClass = 'status-dormancy';
+      statusText = dict.dormancy || '🌾 खेती/छुट्टी पर';
+      dotColor = 'bg-amber-500';
+    }
 
-<div class="flex items-start gap-4 mb-3">
-<div class="w-16 h-16 rounded-full bg-slate-100 border-2 border-green-600 overflow-hidden flex-shrink-0 flex items-center justify-center">
-<img src="${w.photo_url || '/static/images/icons/mason.svg'}" class="w-full h-full object-cover" alt="${w.name}">
-</div>
-<div class="flex-1 min-w-0">
-<div class="flex items-center gap-2 mb-0.5 flex-wrap">
-<h3 class="text-lg font-extrabold text-slate-900 truncate">${w.name}</h3>
-<button type="button" class="speak-btn !w-6 !h-6 !text-xs" onclick="speakPrompt('${w.name}, ${w.village}, रोज की दिहाड़ी ₹${w.daily_rate}', this)" aria-label="कारीगर का विवरण सुनें" title="कारीगर का विवरण सुनें">🔊</button>
-${topRatedBadge}
-</div>
-<p class="text-xs text-slate-600 mb-1 flex items-center gap-1 font-semibold">
-<span>📍</span> ${w.village}, ${w.district}
-</p>
-${tierBadge}
-</div>
-</div>
+    let tierBadge = '';
+    if (w.verification_tier === 'tier3') {
+      tierBadge = `<span class="inline-flex items-center gap-1 bg-gradient-to-r from-amber-50 to-amber-100 text-amber-900 border border-amber-300 text-xs px-2.5 py-0.5 rounded-full font-black shadow-sm">🥇 ${t_panchayat}</span>`;
+    } else if (w.verification_tier === 'tier2') {
+      tierBadge = `<span class="inline-flex items-center gap-1 bg-gradient-to-r from-blue-50 to-indigo-50 text-indigo-900 border border-blue-200 text-xs px-2.5 py-0.5 rounded-full font-black shadow-sm">🥈 सहकर्मी प्रमाणित</span>`;
+    } else if (w.is_verified) {
+      tierBadge = `<span class="inline-flex items-center gap-1 bg-gradient-to-r from-emerald-50 to-green-50 text-green-900 border border-green-300 text-xs px-2.5 py-0.5 rounded-full font-black shadow-sm">🥉 ${t_ver}</span>`;
+    }
 
-<div class="flex flex-wrap gap-1.5 mb-3">
-${tradePills}
-<span class="bg-blue-50 text-blue-800 text-xs px-2 py-1 rounded-md font-bold">
-${w.experience_years} ${expLabel}
-</span>
-${w.is_team_leader ? `<span class="bg-purple-100 text-purple-900 text-xs px-2 py-1 rounded-md font-bold">👥 ${w.team_size} ${t_crew}</span>` : ''}
-</div>
-${earnabilityBadge}
+    const topRatedBadge = (w.is_top_rated || w.rating_avg >= 4.5)
+      ? `<span class="inline-flex items-center gap-0.5 bg-amber-100 text-amber-900 border border-amber-300 text-xs px-2 py-0.5 rounded-full font-black">⭐ ${t_top}</span>`
+      : '';
 
-<div class="flex items-center justify-between py-2 border-y border-slate-100 mb-3">
-<div>
-<span class="text-xs text-slate-500 font-bold block">${dailyWageLabel}</span>
-<strong class="text-xl font-black text-green-800">₹${w.daily_rate}</strong>
-<span class="text-xs text-slate-500">${perDayLabel}</span>
-</div>
-<div class="text-right">
-<span class="${statusClass} status-pill mb-1">${statusText}</span>
-<div class="text-xs text-slate-500 font-bold">
-⭐ ${w.rating_avg} (${w.review_count})
-</div>
-</div>
-</div>
-${w.bio_text ? `<p class="text-xs text-slate-600 line-clamp-2 mb-4 italic font-medium">"${w.bio_text}"</p>` : ''}
+    const tradePills = w.skills.map(s => {
+      return `<span class="bg-slate-100 text-slate-800 text-xs px-2.5 py-1 rounded-lg font-bold border border-slate-200/60">${getLocalizedTradeName(s)}</span>`;
+    }).join(' ');
 
-<div class="grid grid-cols-2 gap-2 mb-2">
-<button type="button" onclick="unlockContact('${w.id}', 'call')" class="py-3 px-2 bg-green-700 hover:bg-green-800 text-white rounded-xl font-extrabold text-sm flex items-center justify-center gap-1.5 shadow-sm touch-btn">
-<span>📞</span> ${callText.replace(/^📞\s*/, '')}
-</button>
-<button type="button" onclick="unlockContact('${w.id}', 'whatsapp')" class="py-3 px-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-extrabold text-sm flex items-center justify-center gap-1.5 shadow-sm touch-btn">
-<span>💬</span> ${waText.replace(/^💬\s*/, '')}
-</button>
-</div>
+    const callText = dict.btn_call || '📞 कॉल करें';
+    const waText = dict.btn_whatsapp || '💬 WhatsApp';
+    const slipText = dict.btn_work_slip || '📋 काम की पर्ची बनाएँ';
+    const reportText = dict.btn_report || '⚠️ रिपोर्ट करें';
+    const dailyWageLabel = dict.daily_wage || 'रोज की दिहाड़ी';
+    const perDayLabel = dict.per_day || '/दिन';
+    const expLabel = dict.experience || 'साल अनुभव';
 
-<div class="flex justify-between items-center pt-2 text-xs">
-<button type="button" onclick="openWorkSlip('${w.id}')" class="text-slate-600 hover:text-green-800 font-bold flex items-center gap-1">
-<span>📋</span> ${slipText.replace(/^📋\s*/, '')}
-</button>
-<button type="button" onclick="shareWorkerWhatsApp('${w.name}', '${w.skills[0] || 'कारीगर'}', '${w.district}', '${w.id}')" class="text-emerald-700 hover:text-emerald-900 font-extrabold flex items-center gap-1" title="WhatsApp पर शेयर करें">
-<span>📲</span> ${t_share}
-</button>
-<button type="button" onclick="openReportModal('${w.id}', '${w.name}')" class="text-slate-600 hover:text-red-700 font-bold">
-<span>⚠️</span> ${reportText.replace(/^⚠️\s*/, '')}
-</button>
-</div>
-</div>
-</div>
-`;
-}).join('');
+    const earnabilityBadge = w.estimated_monthly_earnings
+      ? `<div class="mb-3 px-3 py-1.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-xl text-xs font-extrabold flex items-center justify-between">
+          <span class="flex items-center gap-1"><span>💰</span> ${t_earn}</span>
+          <span class="text-emerald-800 font-black">₹${w.estimated_monthly_earnings.toLocaleString('en-IN')}${t_max}</span>
+        </div>`
+      : '';
+
+    return `
+    <div class="card-elevation bg-white rounded-2xl border border-slate-200/90 overflow-hidden flex flex-col justify-between transition-all duration-200">
+      <div class="p-5 flex-1">
+        <div class="flex items-start gap-3.5 mb-3.5">
+          <div class="relative w-14 h-14 rounded-full bg-slate-100 border-2 border-emerald-600 overflow-hidden flex-shrink-0 flex items-center justify-center">
+            <img src="${w.photo_url || '/static/images/icons/mason.svg'}" class="w-full h-full object-cover" alt="${w.name}" loading="lazy" onerror="this.src='/static/images/icons/mason.svg'">
+            <span class="absolute bottom-0 right-0 ${dotColor} w-3.5 h-3.5 rounded-full border-2 border-white ring-1 ring-black/5" title="${statusText}"></span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1 flex-wrap">
+              <h3 class="text-lg font-black text-slate-900 truncate tracking-tight">${w.name}</h3>
+              <button type="button" class="speak-btn !w-6 !h-6 !text-xs touch-scale" onclick="speakPrompt('${w.name}, ${w.village}, रोज की दिहाड़ी ₹${w.daily_rate}', this)" aria-label="कारीगर का विवरण सुनें" title="कारीगर का विवरण सुनें">🔊</button>
+              ${topRatedBadge}
+            </div>
+            <p class="text-xs text-slate-600 mb-1.5 flex items-center gap-1 font-semibold truncate">
+              <span>📍</span> ${w.village}, ${w.district}
+            </p>
+            ${tierBadge}
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-1.5 mb-3">
+          ${tradePills}
+          <span class="bg-blue-50 text-blue-800 text-xs px-2 py-1 rounded-lg font-bold border border-blue-200/60">
+            ${w.experience_years} ${expLabel}
+          </span>
+          ${w.is_team_leader ? `<span class="bg-purple-100 text-purple-900 text-xs px-2 py-1 rounded-lg font-bold border border-purple-200/60">👥 ${w.team_size} ${t_crew}</span>` : ''}
+        </div>
+
+        ${earnabilityBadge}
+
+        <div class="flex items-center justify-between py-2.5 px-3 bg-slate-50/80 rounded-xl border border-slate-100 mb-3">
+          <div>
+            <span class="text-[11px] text-slate-500 font-bold block uppercase tracking-wide">${dailyWageLabel}</span>
+            <div class="flex items-baseline gap-1">
+              <strong class="text-2xl font-black text-green-800">₹${w.daily_rate}</strong>
+              <span class="text-xs text-slate-500 font-medium">${perDayLabel}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="${statusClass} status-pill mb-1 inline-block">${statusText}</span>
+            <div class="text-xs text-slate-600 font-bold">
+              ⭐ ${w.rating_avg} <span class="text-slate-400 font-medium">(${w.review_count})</span>
+            </div>
+          </div>
+        </div>
+
+        ${w.bio_text ? `<p class="text-xs text-slate-600 line-clamp-2 mb-3 italic font-medium">"${w.bio_text}"</p>` : ''}
+      </div>
+
+      <div class="p-5 pt-0">
+        <div class="grid grid-cols-2 gap-2 mb-2.5">
+          <button type="button" onclick="unlockContact('${w.id}', 'call')" class="touch-scale py-3 px-2 bg-gradient-to-r from-green-700 to-emerald-700 hover:from-green-800 hover:to-emerald-800 text-white rounded-xl font-black text-sm flex items-center justify-center gap-1.5 shadow-sm">
+            <span>📞</span> ${callText.replace(/^📞\s*/, '')}
+          </button>
+          <button type="button" onclick="unlockContact('${w.id}', 'whatsapp')" class="touch-scale py-3 px-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-xl font-black text-sm flex items-center justify-center gap-1.5 shadow-sm">
+            <span>💬</span> ${waText.replace(/^💬\s*/, '')}
+          </button>
+        </div>
+
+        <div class="flex justify-between items-center pt-2.5 border-t border-slate-100 text-xs">
+          <button type="button" onclick="openWorkSlip('${w.id}')" class="text-slate-600 hover:text-green-800 font-bold flex items-center gap-1 transition-colors">
+            <span>📋</span> ${slipText.replace(/^📋\s*/, '')}
+          </button>
+          <button type="button" onclick="shareWorkerWhatsApp('${w.name}', '${w.skills[0] || 'कारीगर'}', '${w.district}', '${w.id}')" class="text-emerald-700 hover:text-emerald-900 font-black flex items-center gap-1 transition-colors" title="WhatsApp पर शेयर करें">
+            <span>📲</span> ${t_share}
+          </button>
+          <button type="button" onclick="openReportModal('${w.id}', '${w.name}')" class="text-slate-400 hover:text-red-700 font-bold transition-colors">
+            <span>⚠️</span> ${reportText.replace(/^⚠️\s*/, '')}
+          </button>
+        </div>
+      </div>
+    </div>
+    `;
+  }).join('');
 }
 async function unlockContact(workerId, contactType) {
 try {
