@@ -40,7 +40,8 @@ const message = `📋 *काम की पर्ची (Work Agreement Slip)*
 💵 अग्रिम (Advance): ₹${advance}
 -----------------------------------
 ⚖️ दोनों पक्षों की आपसी सहमति से तय हुआ।
-🔗 प्लेटफॉर्म: काम मिलेगा (Kaam Milega)`;
+⚠️ वैधानिक अस्वीकरण: काम मिलेगा केवल मध्यस्थ है (0% कमीशन, 18+ अनिवार्य)। कार्यस्थल सुरक्षा व मजदूरी अदायगी की जिम्मेदारी पक्षों की है।
+🔗 प्लेटफॉर्म: काम मिलेगा (Kaam Milega) https://kaammilega.org`;
 const encoded = encodeURIComponent(message);
 window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
 closeWorkSlip();

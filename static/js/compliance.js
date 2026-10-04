@@ -162,3 +162,55 @@ location.reload();
 alert('स्थिति बदलने में त्रुटि हुई।');
 }
 }
+
+// ==========================================
+// LEGAL DISCLAIMERS CONTROLLER & READ ALOUD
+// ==========================================
+let activeDisclaimerSection = 'intermediary';
+
+function openLegalDisclaimersModal(defaultSection) {
+  const modal = document.getElementById('legal-disclaimers-modal');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+    selectDisclaimerTab(defaultSection || activeDisclaimerSection || 'intermediary');
+  }
+}
+
+function closeLegalDisclaimersModal() {
+  const modal = document.getElementById('legal-disclaimers-modal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+  }
+}
+
+function selectDisclaimerTab(tabKey) {
+  activeDisclaimerSection = tabKey;
+  const tabs = document.querySelectorAll('.disc-tab-btn');
+  tabs.forEach(btn => {
+    if (btn.dataset.tab === tabKey) {
+      btn.className = 'disc-tab-btn px-3 py-1.5 rounded-xl whitespace-nowrap bg-green-700 text-white shadow-sm transition-all touch-btn';
+    } else {
+      btn.className = 'disc-tab-btn px-3 py-1.5 rounded-xl whitespace-nowrap bg-slate-100 text-slate-700 transition-all touch-btn';
+    }
+  });
+
+  const sections = document.querySelectorAll('.disc-content-pane');
+  sections.forEach(sec => {
+    if (sec.id === 'disc-pane-' + tabKey) {
+      sec.classList.remove('hidden');
+    } else {
+      sec.classList.add('hidden');
+    }
+  });
+}
+
+function speakActiveDisclaimer() {
+  const pane = document.getElementById('disc-pane-' + activeDisclaimerSection);
+  if (!pane) return;
+  const audioText = pane.dataset.audioSummary || pane.innerText;
+  if (typeof speakPrompt === 'function') {
+    speakPrompt(audioText);
+  }
+}

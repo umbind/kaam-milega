@@ -43,6 +43,11 @@ async def handle_terms(request: web.Request):
     with open(t_path, "r", encoding="utf-8") as f:
         return web.Response(text=f.read(), content_type="text/html", charset="utf-8")
 
+async def handle_disclaimer(request: web.Request):
+    d_path = os.path.join(TEMPLATES_DIR, "disclaimer.html")
+    with open(d_path, "r", encoding="utf-8") as f:
+        return web.Response(text=f.read(), content_type="text/html", charset="utf-8")
+
 async def handle_robots(request: web.Request):
     r_path = os.path.join(STATIC_DIR, "robots.txt")
     with open(r_path, "r", encoding="utf-8") as f:
@@ -69,6 +74,8 @@ def create_app():
     app.router.add_get("/", handle_home)
     app.router.add_get("/privacy", handle_privacy)
     app.router.add_get("/terms", handle_terms)
+    app.router.add_get("/disclaimer", handle_disclaimer)
+    app.router.add_get("/disclaimers", handle_disclaimer)
     app.router.add_get("/robots.txt", handle_robots)
     app.router.add_get("/sw.js", handle_sw)
 

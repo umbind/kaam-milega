@@ -856,6 +856,39 @@ class TestKaamMilegaSuite(AioHTTPTestCase):
 
         print("  [PASS] Test 19: Privacy-First Zero-Work-History & Data Minimization Guaranteed")
 
+    # --- Test 20: Comprehensive Legal Disclaimers & Statutory Compliance Verification ---
+    async def test_legal_disclaimers_compliance_routes(self):
+        # 1. Test /disclaimer route
+        r_disc = await self.client.request("GET", "/disclaimer")
+        self.assertEqual(r_disc.status, 200)
+        disc_html = await r_disc.text()
+        self.assertIn("IT Act Sec 79", disc_html)
+        self.assertIn("धारा 79", disc_html)
+        self.assertIn("बाल एवं किशोर श्रम", disc_html)
+        self.assertIn("न्यूनतम मजदूरी", disc_html)
+        self.assertIn("1930", disc_html) # Cyber helpline
+        self.assertIn("BOCW", disc_html) # Building and construction safety
+        self.assertIn("DPDP Act, 2023", disc_html)
+        self.assertIn("grievance@kaammilega.org", disc_html)
+
+        # 2. Test /disclaimers alias
+        r_alias = await self.client.request("GET", "/disclaimers")
+        self.assertEqual(r_alias.status, 200)
+
+        # 3. Test /terms route
+        r_terms = await self.client.request("GET", "/terms")
+        self.assertEqual(r_terms.status, 200)
+        terms_html = await r_terms.text()
+        self.assertIn("कानूनी अस्वीकरण", terms_html)
+
+        # 4. Test /privacy route
+        r_priv = await self.client.request("GET", "/privacy")
+        self.assertEqual(r_priv.status, 200)
+        priv_html = await r_priv.text()
+        self.assertIn("DPDP Act 2023", priv_html)
+
+        print("  [PASS] Test 20: Comprehensive Legal Disclaimers & Statutory Compliance Verified")
+
 if __name__ == "__main__":
     print("\n=======================================================")
     print("  RUNNING KAAM MILEGA COMPREHENSIVE CYBER DEFENSE SUITE")
