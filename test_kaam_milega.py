@@ -22,13 +22,41 @@ import sqlite3
 from aiohttp import web
 from aiohttp.test_utils import AioHTTPTestCase
 
-# Import application modules
+# Import application modules with isolated test database
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+TEST_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kaam_milega_test.db")
+os.environ["DB_PATH"] = TEST_DB_PATH
+os.environ["SEED_DEMO_DATA"] = "1"
+
 from database import init_db, get_db, DB_PATH
 from server import create_app
 import security
 
 class TestKaamMilegaSuite(AioHTTPTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        # Ensure fresh clean test database
+        for ext in ["", "-wal", "-shm"]:
+            p = TEST_DB_PATH + ext
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                except Exception:
+                    pass
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        # Clean up test database after all tests complete
+        for ext in ["", "-wal", "-shm"]:
+            p = TEST_DB_PATH + ext
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                except Exception:
+                    pass
 
     async def get_application(self):
         # Reset rate limits and re-init database

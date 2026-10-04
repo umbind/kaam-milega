@@ -336,9 +336,9 @@ const data = await res.json();
 const wEl = document.getElementById('stat-workers');
 const jEl = document.getElementById('stat-jobs');
 const cEl = document.getElementById('stat-contacts');
-if (wEl) wEl.innerText = `${data.total_workers}+`;
-if (jEl) jEl.innerText = `${data.total_jobs}+`;
-if (cEl) cEl.innerText = `${data.total_contacts}+`;
+if (wEl) wEl.innerText = (data.total_workers > 0) ? `${data.total_workers}+` : '0';
+if (jEl) jEl.innerText = (data.total_jobs > 0) ? `${data.total_jobs}+` : '0';
+if (cEl) cEl.innerText = (data.total_contacts > 0) ? `${data.total_contacts}+` : '0';
 } catch (err) {
 }
 }

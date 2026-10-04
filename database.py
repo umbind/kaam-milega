@@ -12,11 +12,12 @@ import uuid
 import json
 from datetime import datetime, timedelta
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kaam_milega.db")
+DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "kaam_milega.db"))
 SECRET_SALT = os.environ.get("KAAM_MILEGA_SALT", "KaamMilega_Rural_Shield_2026_Secure_Salt")
 
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
+def get_db(db_path=None):
+    target = db_path or os.environ.get("DB_PATH", DB_PATH)
+    conn = sqlite3.connect(target)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
@@ -249,7 +250,7 @@ def init_db():
     seed_initial_data()
 
 def seed_initial_data():
-    if os.environ.get("SEED_DEMO_DATA", "1").lower() in ("0", "false", "no"):
+    if os.environ.get("SEED_DEMO_DATA", "0").lower() not in ("1", "true", "yes"):
         return
 
     conn = get_db()
